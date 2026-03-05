@@ -1,6 +1,6 @@
 <!-- # Bài tập Core Components - Buổi 2 -->
 
-# Bài tập 6.1 ôn tập sử dụng Stack Navigation
+# Bài tập 7 ôn tập sử dụng Stack Navigation
 
 ## Thông tin sinh viên
 
