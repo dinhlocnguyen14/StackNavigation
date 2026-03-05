@@ -1,215 +1,249 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
-  Platform, 
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
   StatusBar,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert,
-  Dimensions 
-} from 'react-native';
+} from "react-native";
 
-const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 54 : StatusBar.currentHeight; 
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-export default function App() {
-  const [phoneNumber, setPhoneNumber] = useState('');
+const Stack = createNativeStackNavigator();
+const PRIMARY_COLOR = "#2D9CDB";
+
+/* ================= LOGIN SCREEN ================= */
+
+function LoginScreen({ navigation }) {
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const isValid = phoneNumber.length >= 9;
+  const [error, setError] = useState("");
+
+  const formatPhone = (value) => {
+    const cleaned = value.replace(/\D/g, "").slice(0, 10);
+    const part1 = cleaned.slice(0, 3);
+    const part2 = cleaned.slice(3, 6);
+    const part3 = cleaned.slice(6, 10);
+
+    if (cleaned.length <= 3) return part1;
+    if (cleaned.length <= 6) return `${part1} ${part2}`;
+    return `${part1} ${part2} ${part3}`;
+  };
+
+  const validatePhone = (phone) => {
+    const regex = /^0(3|5|7|8|9)[0-9]{8}$/;
+
+    if (phone.length === 0) {
+      setError("");
+      return;
+    }
+
+    if (!regex.test(phone)) {
+      setError("Số điện thoại không đúng định dạng");
+    } else {
+      setError("");
+    }
+  };
+
+  const handleChangeText = (text) => {
+    let cleaned = text.replace(/\D/g, "");
+
+    if (cleaned.startsWith("84")) {
+      cleaned = "0" + cleaned.slice(2);
+    }
+
+    cleaned = cleaned.slice(0, 10);
+
+    setPhoneNumber(cleaned);
+    validatePhone(cleaned);
+  };
+
+  const isValid = phoneNumber.length === 10 && error === "";
 
   const handlePress = () => {
-    Alert.alert("Thông báo", `Đăng nhập với số: ${phoneNumber}`);
+    if (!isValid) return;
+    navigation.navigate("Home", { phone: phoneNumber });
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-     
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <StatusBar backgroundColor={PRIMARY_COLOR} barStyle="light-content" />
 
-        {/* 2. Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Text style={styles.iconText}>✕</Text> 
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Đăng nhập</Text>
-          <View style={{ width: 40 }} /> 
-        </View>
-
-        {/* 3. Body */}
         <View style={styles.body}>
           <Text style={styles.title}>Nhập số điện thoại</Text>
           <Text style={styles.description}>
-            Dùng số điện thoại để đăng nhập hoặc đăng ký tài khoản tại OneHousing Pro
+            Dùng số điện thoại để đăng nhập hoặc đăng ký tài khoản
           </Text>
 
-          <View style={[
-            styles.inputContainer, 
-            isFocused && styles.inputContainerFocused
-          ]}>
+          <View
+            style={[
+              styles.inputContainer,
+              isFocused && styles.inputFocused,
+              error && styles.inputError,
+            ]}
+          >
             <TextInput
               style={styles.input}
-              placeholder="Nhập số điện thoại của bạn"
-              placeholderTextColor="#A0A0A0"
-              keyboardType="numeric"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              keyboardType="number-pad"
+              value={formatPhone(phoneNumber)}
+              onChangeText={handleChangeText}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              autoFocus={true}
-              selectionColor="#2D9CDB"
             />
-            {phoneNumber.length > 0 && (
-              <TouchableOpacity onPress={() => setPhoneNumber('')}>
-                <View style={styles.clearBtn}>
-                  <Text style={styles.clearBtnText}>✕</Text>
-                </View>
-              </TouchableOpacity>
-            )}
           </View>
+
+          {error !== "" && <Text style={styles.errorText}>{error}</Text>}
         </View>
 
-        {/* 4. Footer */}
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.footer}
-         
-          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
         >
-          <TouchableOpacity 
-            style={[styles.button, !isValid && styles.buttonDisabled]} 
+          <TouchableOpacity
+            style={[styles.button, !isValid && styles.buttonDisabled]}
             disabled={!isValid}
             onPress={handlePress}
           >
-            <Text style={[styles.buttonText, !isValid && styles.buttonTextDisabled]}>
-              Tiếp tục
+            <Text
+              style={[styles.buttonText, !isValid && styles.buttonTextDisabled]}
+            >
+              TIẾP TỤC
             </Text>
           </TouchableOpacity>
         </KeyboardAvoidingView>
-
       </View>
     </TouchableWithoutFeedback>
   );
 }
 
+/* ================= HOME SCREEN ================= */
+
+function HomeScreen({ route }) {
+  const { phone } = route.params;
+
+  return (
+    <View style={homeStyles.container}>
+      <Text style={homeStyles.title}>Trang chủ</Text>
+      <Text style={homeStyles.phoneValue}>{phone}</Text>
+    </View>
+  );
+}
+
+/* ================= APP ROOT ================= */
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: PRIMARY_COLOR,
+          },
+          headerTintColor: "#fff",
+          headerTitleStyle: {
+            fontWeight: "600",
+          },
+        }}
+      >
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            title: "Trang chủ",
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+/* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    
-    paddingTop: STATUSBAR_HEIGHT, 
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0, 
+    backgroundColor: "#fff",
   },
-  
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 50, 
-    marginTop: 10, 
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  iconText: {
-    fontSize: 24,
-    color: '#1A1A1A',
-    fontWeight: '300',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-
   body: {
-    paddingHorizontal: 24,
-    paddingTop: 20, 
     flex: 1,
+    padding: 24,
+    justifyContent: "center",
   },
   title: {
-    fontSize: 26, 
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 10,
   },
   description: {
-    fontSize: 15,
-    color: '#666666',
-    lineHeight: 22,
+    fontSize: 14,
+    color: "#666",
     marginBottom: 30,
   },
-  
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0', 
-    paddingVertical: 10,
+    borderBottomColor: "#ccc",
+    paddingVertical: 8,
   },
-  inputContainerFocused: {
-    borderBottomColor: '#2D9CDB', 
+  inputFocused: {
+    borderBottomColor: PRIMARY_COLOR,
+    borderBottomWidth: 2,
+  },
+  inputError: {
+    borderBottomColor: "#EB5757",
     borderBottomWidth: 2,
   },
   input: {
-    flex: 1,
     fontSize: 18,
-    color: '#1A1A1A',
-    paddingVertical: 5,
-    fontWeight: '500',
   },
-  clearBtn: {
-    backgroundColor: '#E0E0E0',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
+  errorText: {
+    color: "#EB5757",
+    marginTop: 8,
   },
-  clearBtnText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
   footer: {
-    paddingHorizontal: 24,
-    paddingBottom: 20, 
-    justifyContent: 'flex-end',
+    padding: 24,
   },
   button: {
-    backgroundColor: '#2D9CDB', 
+    backgroundColor: PRIMARY_COLOR,
     paddingVertical: 16,
-    borderRadius: 12, 
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#2D9CDB", 
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5, 
+    borderRadius: 4, // Android thường ít bo tròn
+    alignItems: "center",
   },
   buttonDisabled: {
-    backgroundColor: '#F2F2F2', 
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: "#ccc",
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   buttonTextDisabled: {
-    color: '#BDBDBD',
+    color: "#888",
+  },
+});
+
+const homeStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 20,
+  },
+  phoneValue: {
+    fontSize: 18,
   },
 });
